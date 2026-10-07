@@ -98,3 +98,59 @@ print("\nProducts:")
 print(products.head())
 
 print("\nNumber of products:", len(products))
+
+
+
+from datetime import datetime, timedelta
+
+# --------------------------------------------------
+# Generate Opening Inventory
+# --------------------------------------------------
+
+opening_inventory = []
+
+batch_counter = 1
+
+for _, product in products.iterrows():
+
+    # Select 1-2 warehouses for each product
+    selected_warehouses = random.sample(
+        warehouses,
+        random.randint(1, 2)
+    )
+
+    for warehouse_id in selected_warehouses:
+
+        batch_id = f"B{batch_counter:04d}"
+        batch_counter += 1
+
+        opening_quantity = random.randint(50, 500)
+
+        # Generate expiry date between 30 and 365 days
+        expiry_date = datetime.now() + timedelta(
+            days=random.randint(30, 365)
+        )
+
+        opening_inventory.append({
+            "warehouse_id": warehouse_id,
+            "product_id": product["product_id"],
+            "batch_id": batch_id,
+            "opening_quantity": opening_quantity,
+            "expiry_date": expiry_date.date()
+        })
+
+
+opening_inventory = pd.DataFrame(opening_inventory)
+
+
+# --------------------------------------------------
+# Display Opening Inventory
+# --------------------------------------------------
+
+print("\nOpening Inventory:")
+print(opening_inventory.head(10))
+
+print(
+    "\nNumber of opening inventory records:",
+    len(opening_inventory)
+)
