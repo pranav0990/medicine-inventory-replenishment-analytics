@@ -154,3 +154,67 @@ print(
     "\nNumber of opening inventory records:",
     len(opening_inventory)
 )
+
+# --------------------------------------------------
+# Generate Stock Movements
+# --------------------------------------------------
+
+NUM_MOVEMENTS = 10000
+
+stock_movements = []
+
+movement_types = ["ISSUE", "RECEIPT"]
+
+for i in range(1, NUM_MOVEMENTS + 1):
+
+    # Select an existing inventory record
+    inventory_row = opening_inventory.sample(
+        n=1,
+        random_state=RANDOM_SEED + i
+    ).iloc[0]
+
+    movement_id = f"M{i:06d}"
+
+    warehouse_id = inventory_row["warehouse_id"]
+    product_id = inventory_row["product_id"]
+    batch_id = inventory_row["batch_id"]
+
+    movement_type = random.choice(movement_types)
+
+    quantity = random.randint(1, 50)
+
+    # Generate event date within the recent period
+    event_time = datetime.now() - timedelta(
+        days=random.randint(0, 30),
+        hours=random.randint(0, 23),
+        minutes=random.randint(0, 59)
+    )
+
+    stock_movements.append({
+        "movement_id": movement_id,
+        "warehouse_id": warehouse_id,
+        "product_id": product_id,
+        "batch_id": batch_id,
+        "movement_type": movement_type,
+        "quantity": quantity,
+        "event_time": event_time
+    })
+
+
+stock_movements = pd.DataFrame(stock_movements)
+
+
+# --------------------------------------------------
+# Display Stock Movements
+# --------------------------------------------------
+
+print("\nStock Movements:")
+print(stock_movements.head(10))
+
+print(
+    "\nNumber of stock movements:",
+    len(stock_movements)
+)
+
+print("\nMovement type distribution:")
+print(stock_movements["movement_type"].value_counts())
