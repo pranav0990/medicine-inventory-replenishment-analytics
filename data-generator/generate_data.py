@@ -110,3 +110,19 @@ supplier_lead_times = pd.DataFrame({
 
 print("\nSupplier Lead Times:")
 print(supplier_lead_times)
+
+
+# Save generated datasets as CSV files
+
+import os
+
+output_dir = "generated_data"
+os.makedirs(output_dir, exist_ok=True)
+
+products.to_csv(f"{output_dir}/products.csv", index=False)
+opening_inventory.to_csv(f"{output_dir}/opening_inventory.csv", index=False)
+stock_movements.to_csv(f"{output_dir}/stock_movements.csv", index=False)
+daily_demand.to_csv(f"{output_dir}/daily_demand.csv", index=False)
+supplier_lead_times.to_csv(f"{output_dir}/supplier_lead_times.csv", index=False)
+
+print("\nAll datasets saved successfully!")
