@@ -1,128 +1,100 @@
 import pandas as pd
+import random
 
-# Create sample medicine products
-products = pd.DataFrame({
-    "product_id": ["P001", "P002", "P003", "P004", "P005"],
-    "product_name": [
-        "Paracetamol 500mg",
-        "Amoxicillin 250mg",
-        "Cetirizine 10mg",
-        "Azithromycin 500mg",
-        "Ibuprofen 400mg"
-    ],
-    "category": [
-        "Analgesic",
-        "Antibiotic",
-        "Antihistamine",
-        "Antibiotic",
-        "Analgesic"
-    ],
-    "supplier_id": [
-        "S001",
-        "S002",
-        "S001",
-        "S003",
-        "S002"
-    ]
-})
+# --------------------------------------------------
+# Configuration
+# --------------------------------------------------
 
-print(products)
+RANDOM_SEED = 42
+random.seed(RANDOM_SEED)
 
-# Create opening inventory
-opening_inventory = pd.DataFrame({
-    "warehouse_id": ["W001", "W001", "W002", "W002", "W003"],
-    "product_id": ["P001", "P002", "P001", "P003", "P004"],
-    "batch_id": ["B001", "B002", "B003", "B004", "B005"],
-    "opening_quantity": [100, 200, 150, 120, 80],
-    "expiry_date": [
-        "2027-01-15",
-        "2026-12-20",
-        "2027-03-10",
-        "2026-11-30",
-        "2027-02-28"
-    ]
-})
-
-print("\nOpening Inventory:")
-print(opening_inventory)
-
-# Create stock movements
-stock_movements = pd.DataFrame({
-    "movement_id": ["M001", "M002", "M003", "M004", "M005"],
-    "warehouse_id": ["W001", "W001", "W002", "W002", "W003"],
-    "product_id": ["P001", "P001", "P002", "P003", "P004"],
-    "batch_id": ["B001", "B001", "B002", "B004", "B005"],
-    "movement_type": ["ISSUE", "RECEIPT", "ISSUE", "ISSUE", "RECEIPT"],
-    "quantity": [20, 50, 30, 25, 40],
-    "event_time": [
-        "2026-09-20 10:00:00",
-        "2026-09-21 14:00:00",
-        "2026-09-21 16:00:00",
-        "2026-09-22 11:00:00",
-        "2026-09-23 09:00:00"
-    ]
-})
-
-print("\nStock Movements:")
-print(stock_movements)
-
-# Create daily demand
-daily_demand = pd.DataFrame({
-    "date": [
-        "2026-09-20",
-        "2026-09-21",
-        "2026-09-22",
-        "2026-09-23",
-        "2026-09-24",
-        "2026-09-25",
-        "2026-09-26"
-    ],
-    "warehouse_id": [
-        "W001",
-        "W001",
-        "W001",
-        "W001",
-        "W001",
-        "W001",
-        "W001"
-    ],
-    "product_id": [
-        "P001",
-        "P001",
-        "P001",
-        "P001",
-        "P001",
-        "P001",
-        "P001"
-    ],
-    "units_requested": [20, 25, 30, 0, 25, 20, 30]
-})
-
-print("\nDaily Demand:")
-print(daily_demand)
-
-# Create supplier lead times
-supplier_lead_times = pd.DataFrame({
-    "supplier_id": ["S001", "S002", "S003", "S001", "S002"],
-    "product_id": ["P001", "P002", "P004", "P003", "P005"],
-    "lead_time_days": [7, 10, 5, 6, 8]
-})
-
-print("\nSupplier Lead Times:")
-print(supplier_lead_times)
+# Number of records
+NUM_PRODUCTS = 50
+NUM_SUPPLIERS = 10
+NUM_WAREHOUSES = 5
 
 
-# Save generated datasets as CSV files
+# --------------------------------------------------
+# Generate Suppliers
+# --------------------------------------------------
 
-import os
+suppliers = [
+    f"S{i:03d}"
+    for i in range(1, NUM_SUPPLIERS + 1)
+]
 
-output_dir = "generated_data"
-os.makedirs(output_dir, exist_ok=True)
 
-products.to_csv(f"{output_dir}/products.csv", index=False)
-opening_inventory.to_csv(f"{output_dir}/opening_inventory.csv", index=False)
-stock_movements.to_csv(f"{output_dir}/stock_movements.csv", index=False)
-daily_demand.to_csv(f"{output_dir}/daily_demand.csv", index=False)
-supplier_lead_times.to_csv(f"{output_dir}/supplier_lead_times.csv", index=False)
+# --------------------------------------------------
+# Generate Warehouses
+# --------------------------------------------------
 
-print("\nAll datasets saved successfully!")
+warehouses = [
+    f"W{i:03d}"
+    for i in range(1, NUM_WAREHOUSES + 1)
+]
+
+
+# --------------------------------------------------
+# Generate Products
+# --------------------------------------------------
+
+categories = [
+    "Analgesic",
+    "Antibiotic",
+    "Antihistamine",
+    "Antiviral",
+    "Cardiovascular"
+]
+
+product_names = [
+    "Paracetamol",
+    "Amoxicillin",
+    "Cetirizine",
+    "Azithromycin",
+    "Ibuprofen",
+    "Metformin",
+    "Amlodipine",
+    "Omeprazole",
+    "Ciprofloxacin",
+    "Pantoprazole"
+]
+
+products = []
+
+for i in range(1, NUM_PRODUCTS + 1):
+
+    product_id = f"P{i:03d}"
+
+    base_name = random.choice(product_names)
+
+    product_name = f"{base_name} {random.choice([250, 500, 650])}mg"
+
+    category = random.choice(categories)
+
+    supplier_id = random.choice(suppliers)
+
+    products.append({
+        "product_id": product_id,
+        "product_name": product_name,
+        "category": category,
+        "supplier_id": supplier_id
+    })
+
+
+products = pd.DataFrame(products)
+
+
+# --------------------------------------------------
+# Display generated data
+# --------------------------------------------------
+
+print("Suppliers:")
+print(suppliers)
+
+print("\nWarehouses:")
+print(warehouses)
+
+print("\nProducts:")
+print(products.head())
+
+print("\nNumber of products:", len(products))
