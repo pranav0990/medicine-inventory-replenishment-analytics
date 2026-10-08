@@ -1,42 +1,64 @@
 import pandas as pd
 import random
+from datetime import datetime, timedelta
 
-# --------------------------------------------------
+
+# ==================================================
 # Configuration
-# --------------------------------------------------
+# ==================================================
 
 RANDOM_SEED = 42
 random.seed(RANDOM_SEED)
 
-# Number of records
 NUM_PRODUCTS = 50
 NUM_SUPPLIERS = 10
 NUM_WAREHOUSES = 5
+NUM_MOVEMENTS = 10000
+NUM_DEMAND_DAYS = 14
+
+# Fixed date for reproducibility
+# Do NOT use datetime.now()
+BASE_DATE = datetime(2026, 9, 30)
 
 
-# --------------------------------------------------
+# ==================================================
 # Generate Suppliers
-# --------------------------------------------------
+# ==================================================
 
-suppliers = [
-    f"S{i:03d}"
-    for i in range(1, NUM_SUPPLIERS + 1)
-]
+suppliers = []
+
+for i in range(1, NUM_SUPPLIERS + 1):
+
+    suppliers.append({
+        "supplier_id": f"S{i:03d}",
+        "supplier_name": f"Pharma Supplier {i:02d}",
+        "supplier_status": random.choice(
+            ["ACTIVE", "ACTIVE", "ACTIVE", "INACTIVE"]
+        )
+    })
+
+suppliers = pd.DataFrame(suppliers)
 
 
-# --------------------------------------------------
+# ==================================================
 # Generate Warehouses
-# --------------------------------------------------
+# ==================================================
 
-warehouses = [
-    f"W{i:03d}"
-    for i in range(1, NUM_WAREHOUSES + 1)
-]
+warehouses = []
+
+for i in range(1, NUM_WAREHOUSES + 1):
+
+    warehouses.append({
+        "warehouse_id": f"W{i:03d}",
+        "warehouse_name": f"Warehouse {i:02d}"
+    })
+
+warehouses = pd.DataFrame(warehouses)
 
 
-# --------------------------------------------------
+# ==================================================
 # Generate Products
-# --------------------------------------------------
+# ==================================================
 
 categories = [
     "Analgesic",
@@ -67,45 +89,93 @@ for i in range(1, NUM_PRODUCTS + 1):
 
     base_name = random.choice(product_names)
 
-    product_name = f"{base_name} {random.choice([250, 500, 650])}mg"
+    product_name = (
+        f"{base_name} "
+        f"{random.choice([250, 500, 650])}mg"
+    )
 
     category = random.choice(categories)
-
-    supplier_id = random.choice(suppliers)
 
     products.append({
         "product_id": product_id,
         "product_name": product_name,
-        "category": category,
-        "supplier_id": supplier_id
+        "category": category
     })
-
 
 products = pd.DataFrame(products)
 
 
-# --------------------------------------------------
-# Display generated data
-# --------------------------------------------------
+# ==================================================
+# Generate Supplier-Product Relationships
+# ==================================================
+# Each product can have 1-3 suppliers
 
-print("Suppliers:")
-print(suppliers)
+supplier_product = []
 
-print("\nWarehouses:")
+for _, product in products.iterrows():
+
+    number_of_suppliers = random.randint(1, 3)
+
+    selected_suppliers = random.sample(
+        list(suppliers["supplier_id"]),
+        number_of_suppliers
+    )
+
+    # Randomly choose one preferred supplier
+    preferred_supplier = random.choice(selected_suppliers)
+
+    for supplier_id in selected_suppliers:
+
+        supplier_product.append({
+            "supplier_id": supplier_id,
+            "product_id": product["product_id"],
+            "lead_time_days": random.randint(3, 14),
+            "unit_cost": round(
+                random.uniform(5, 100),
+                2
+            ),
+            "minimum_order_quantity": random.choice(
+                [10, 20, 50, 100]
+            ),
+            "is_preferred": (
+                supplier_id == preferred_supplier
+            )
+        })
+
+supplier_product = pd.DataFrame(supplier_product)
+
+
+# ==================================================
+# Display Reference Data
+# ==================================================
+
+print("\n================ SUPPLIERS ================")
+print(suppliers.head())
+
+print("\nNumber of suppliers:", len(suppliers))
+
+print("\n================ WAREHOUSES ================")
 print(warehouses)
 
-print("\nProducts:")
+print("\nNumber of warehouses:", len(warehouses))
+
+print("\n================ PRODUCTS ================")
 print(products.head())
 
 print("\nNumber of products:", len(products))
 
+print("\n=========== SUPPLIER-PRODUCT ===============")
+print(supplier_product.head(10))
+
+print(
+    "\nNumber of supplier-product relationships:",
+    len(supplier_product)
+)
 
 
-from datetime import datetime, timedelta
-
-# --------------------------------------------------
+# ==================================================
 # Generate Opening Inventory
-# --------------------------------------------------
+# ==================================================
 
 opening_inventory = []
 
@@ -113,9 +183,9 @@ batch_counter = 1
 
 for _, product in products.iterrows():
 
-    # Select 1-2 warehouses for each product
+    # Each product is stored in 1-2 warehouses
     selected_warehouses = random.sample(
-        warehouses,
+        list(warehouses["warehouse_id"]),
         random.randint(1, 2)
     )
 
@@ -126,8 +196,8 @@ for _, product in products.iterrows():
 
         opening_quantity = random.randint(50, 500)
 
-        # Generate expiry date between 30 and 365 days
-        expiry_date = datetime.now() + timedelta(
+        # Expiry date between 30 and 365 days
+        expiry_date = BASE_DATE + timedelta(
             days=random.randint(30, 365)
         )
 
@@ -143,11 +213,11 @@ for _, product in products.iterrows():
 opening_inventory = pd.DataFrame(opening_inventory)
 
 
-# --------------------------------------------------
+# ==================================================
 # Display Opening Inventory
-# --------------------------------------------------
+# ==================================================
 
-print("\nOpening Inventory:")
+print("\n================ OPENING INVENTORY ================")
 print(opening_inventory.head(10))
 
 print(
@@ -155,15 +225,28 @@ print(
     len(opening_inventory)
 )
 
-# --------------------------------------------------
-# Generate Stock Movements
-# --------------------------------------------------
 
-NUM_MOVEMENTS = 10000
+# ==================================================
+# Generate Stock Movements
+# ==================================================
 
 stock_movements = []
 
 movement_types = ["ISSUE", "RECEIPT"]
+
+# Track approximate stock for realistic movement generation
+running_stock = {}
+
+for _, row in opening_inventory.iterrows():
+
+    key = (
+        row["warehouse_id"],
+        row["product_id"],
+        row["batch_id"]
+    )
+
+    running_stock[key] = row["opening_quantity"]
+
 
 for i in range(1, NUM_MOVEMENTS + 1):
 
@@ -173,22 +256,52 @@ for i in range(1, NUM_MOVEMENTS + 1):
         random_state=RANDOM_SEED + i
     ).iloc[0]
 
-    movement_id = f"M{i:06d}"
-
     warehouse_id = inventory_row["warehouse_id"]
     product_id = inventory_row["product_id"]
     batch_id = inventory_row["batch_id"]
 
-    movement_type = random.choice(movement_types)
+    key = (
+        warehouse_id,
+        product_id,
+        batch_id
+    )
 
-    quantity = random.randint(1, 50)
+    current_stock = running_stock[key]
 
-    # Generate event date within the recent period
-    event_time = datetime.now() - timedelta(
+    # If stock is low, prefer receipt
+    if current_stock < 30:
+        movement_type = "RECEIPT"
+
+    else:
+        movement_type = random.choices(
+            ["ISSUE", "RECEIPT"],
+            weights=[70, 30]
+        )[0]
+
+    if movement_type == "ISSUE":
+
+        # Do not normally issue more than available stock
+        quantity = random.randint(
+            1,
+            min(30, current_stock)
+        )
+
+        running_stock[key] -= quantity
+
+    else:
+
+        quantity = random.randint(10, 50)
+
+        running_stock[key] += quantity
+
+    # Generate event time within previous 30 days
+    event_time = BASE_DATE - timedelta(
         days=random.randint(0, 30),
         hours=random.randint(0, 23),
         minutes=random.randint(0, 59)
     )
+
+    movement_id = f"M{i:06d}"
 
     stock_movements.append({
         "movement_id": movement_id,
@@ -204,11 +317,11 @@ for i in range(1, NUM_MOVEMENTS + 1):
 stock_movements = pd.DataFrame(stock_movements)
 
 
-# --------------------------------------------------
+# ==================================================
 # Display Stock Movements
-# --------------------------------------------------
+# ==================================================
 
-print("\nStock Movements:")
+print("\n================ STOCK MOVEMENTS ================")
 print(stock_movements.head(10))
 
 print(
@@ -216,30 +329,37 @@ print(
     len(stock_movements)
 )
 
-print("\nMovement type distribution:")
-print(stock_movements["movement_type"].value_counts())
+print(
+    "\nMovement type distribution:"
+)
+
+print(
+    stock_movements["movement_type"].value_counts()
+)
 
 
-# --------------------------------------------------
+# ==================================================
 # Generate Daily Demand
-# --------------------------------------------------
+# ==================================================
 
 daily_demand = []
 
-NUM_DEMAND_DAYS = 14
-
-base_date = datetime(2026, 9, 30)
-
 for day in range(NUM_DEMAND_DAYS):
 
-    demand_date = base_date - timedelta(days=day)
+    demand_date = BASE_DATE - timedelta(
+        days=day
+    )
 
-    # Generate demand for different warehouse-product combinations
-    for _ in range(200):
+    # 200 demand records per day
+    for record_number in range(200):
 
         inventory_row = opening_inventory.sample(
             n=1,
-            random_state=RANDOM_SEED + day * 1000 + _
+            random_state=(
+                RANDOM_SEED
+                + day * 1000
+                + record_number
+            )
         ).iloc[0]
 
         daily_demand.append({
@@ -249,31 +369,52 @@ for day in range(NUM_DEMAND_DAYS):
             "units_requested": random.randint(1, 50)
         })
 
+
 daily_demand = pd.DataFrame(daily_demand)
 
-print("\nDaily Demand:")
+
+# ==================================================
+# Display Daily Demand
+# ==================================================
+
+print("\n================ DAILY DEMAND ================")
 print(daily_demand.head(10))
 
-print("\nNumber of daily demand records:", len(daily_demand))
+print(
+    "\nNumber of daily demand records:",
+    len(daily_demand)
+)
 
-# --------------------------------------------------
-# Generate Supplier Lead Times
-# --------------------------------------------------
 
-supplier_lead_times = []
+# ==================================================
+# Supplier Lead Times
+# ==================================================
 
-for _, product in products.iterrows():
+# Lead times are already generated as part
+# of the supplier_product relationship.
 
-    supplier_lead_times.append({
-        "supplier_id": product["supplier_id"],
-        "product_id": product["product_id"],
-        "lead_time_days": random.randint(3, 14)
-    })
+supplier_lead_times = supplier_product[
+    [
+        "supplier_id",
+        "product_id",
+        "lead_time_days"
+    ]
+].copy()
 
-supplier_lead_times = pd.DataFrame(supplier_lead_times)
 
-print("\nSupplier Lead Times:")
-print(supplier_lead_times.head(10))
+# ==================================================
+# Display Supplier Lead Times
+# ==================================================
 
-print("\nNumber of supplier lead-time records:",
-      len(supplier_lead_times))
+print(
+    "\n================ SUPPLIER LEAD TIMES ================"
+)
+
+print(
+    supplier_lead_times.head(10)
+)
+
+print(
+    "\nNumber of supplier-product lead-time records:",
+    len(supplier_lead_times)
+)
