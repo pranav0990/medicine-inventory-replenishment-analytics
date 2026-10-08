@@ -218,3 +218,40 @@ print(
 
 print("\nMovement type distribution:")
 print(stock_movements["movement_type"].value_counts())
+
+
+# --------------------------------------------------
+# Generate Daily Demand
+# --------------------------------------------------
+
+daily_demand = []
+
+NUM_DEMAND_DAYS = 14
+
+base_date = datetime(2026, 9, 30)
+
+for day in range(NUM_DEMAND_DAYS):
+
+    demand_date = base_date - timedelta(days=day)
+
+    # Generate demand for different warehouse-product combinations
+    for _ in range(200):
+
+        inventory_row = opening_inventory.sample(
+            n=1,
+            random_state=RANDOM_SEED + day * 1000 + _
+        ).iloc[0]
+
+        daily_demand.append({
+            "date": demand_date.date(),
+            "warehouse_id": inventory_row["warehouse_id"],
+            "product_id": inventory_row["product_id"],
+            "units_requested": random.randint(1, 50)
+        })
+
+daily_demand = pd.DataFrame(daily_demand)
+
+print("\nDaily Demand:")
+print(daily_demand.head(10))
+
+print("\nNumber of daily demand records:", len(daily_demand))
