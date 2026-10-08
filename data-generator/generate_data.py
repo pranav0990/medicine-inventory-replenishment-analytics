@@ -418,3 +418,73 @@ print(
     "\nNumber of supplier-product lead-time records:",
     len(supplier_lead_times)
 )
+
+
+
+# ==================================================
+# Generate Incremental Stock Movement Batches
+# ==================================================
+
+incremental_batches = []
+
+for batch_number in range(1, 4):
+
+    # Each batch contains 100-500 records
+    batch_size = random.randint(100, 500)
+
+    batch_records = []
+
+    for i in range(batch_size):
+
+        # Select an existing inventory record
+        inventory_row = opening_inventory.sample(
+            n=1,
+            random_state=(
+                RANDOM_SEED
+                + batch_number * 10000
+                + i
+            )
+        ).iloc[0]
+
+        warehouse_id = inventory_row["warehouse_id"]
+        product_id = inventory_row["product_id"]
+        batch_id = inventory_row["batch_id"]
+
+        movement_type = random.choice(
+            ["ISSUE", "RECEIPT"]
+        )
+
+        quantity = random.randint(1, 50)
+
+        event_time = BASE_DATE + timedelta(
+            days=batch_number,
+            hours=random.randint(0, 23),
+            minutes=random.randint(0, 59)
+        )
+
+        movement_id = (
+            f"INC{batch_number}_{i + 1:04d}"
+        )
+
+        batch_records.append({
+            "movement_id": movement_id,
+            "warehouse_id": warehouse_id,
+            "product_id": product_id,
+            "batch_id": batch_id,
+            "movement_type": movement_type,
+            "quantity": quantity,
+            "event_time": event_time
+        })
+
+    incremental_batch = pd.DataFrame(
+        batch_records
+    )
+
+    incremental_batches.append(
+        incremental_batch
+    )
+
+    print(
+        f"\nIncremental Batch {batch_number}: "
+        f"{len(incremental_batch)} records"
+    )
