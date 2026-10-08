@@ -649,3 +649,106 @@ print(
     "\nNumber of zero-demand records:",
     len(zero_demand_fixture)
 )
+
+
+
+# ==================================================
+# Save Generated Data to CSV Files
+# ==================================================
+
+import os
+
+OUTPUT_DIR = "generated_data"
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+# --------------------------------------------------
+# Save Reference Data
+# --------------------------------------------------
+
+suppliers.to_csv(
+    f"{OUTPUT_DIR}/suppliers.csv",
+    index=False
+)
+
+warehouses.to_csv(
+    f"{OUTPUT_DIR}/warehouses.csv",
+    index=False
+)
+
+products.to_csv(
+    f"{OUTPUT_DIR}/products.csv",
+    index=False
+)
+
+supplier_product.to_csv(
+    f"{OUTPUT_DIR}/supplier_product.csv",
+    index=False
+)
+
+
+# --------------------------------------------------
+# Save Inventory Data
+# --------------------------------------------------
+
+opening_inventory.to_csv(
+    f"{OUTPUT_DIR}/opening_inventory.csv",
+    index=False
+)
+
+stock_movements.to_csv(
+    f"{OUTPUT_DIR}/stock_movements.csv",
+    index=False
+)
+
+daily_demand.to_csv(
+    f"{OUTPUT_DIR}/daily_demand.csv",
+    index=False
+)
+
+supplier_lead_times.to_csv(
+    f"{OUTPUT_DIR}/supplier_lead_times.csv",
+    index=False
+)
+
+
+# --------------------------------------------------
+# Save Acceptance Test Data
+# --------------------------------------------------
+
+acceptance_fixture.to_csv(
+    f"{OUTPUT_DIR}/acceptance_fixture.csv",
+    index=False
+)
+
+zero_demand_fixture.to_csv(
+    f"{OUTPUT_DIR}/zero_demand_fixture.csv",
+    index=False
+)
+
+
+# --------------------------------------------------
+# Save Incremental Batches
+# --------------------------------------------------
+
+for i, batch in enumerate(
+    incremental_batches,
+    start=1
+):
+
+    batch.to_csv(
+        f"{OUTPUT_DIR}/incremental_batch_{i}.csv",
+        index=False
+    )
+
+
+# --------------------------------------------------
+# Final Output
+# --------------------------------------------------
+
+print("\n==================================================")
+print("All datasets generated successfully!")
+print("==================================================")
+
+print(f"\nFiles saved inside: {OUTPUT_DIR}/")
