@@ -613,3 +613,39 @@ print(
     "\nNumber of acceptance fixture records:",
     len(acceptance_fixture)
 )
+
+
+# ==================================================
+# Zero-Demand Test Fixture
+# ==================================================
+
+zero_demand_fixture = []
+
+test_date = BASE_DATE - timedelta(days=6)
+
+for day in range(7):
+
+    zero_demand_fixture.append({
+        "date": (
+            test_date + timedelta(days=day)
+        ).date(),
+        "warehouse_id": "W001",
+        "product_id": "P002",
+        "units_requested": 0
+    })
+
+zero_demand_fixture = pd.DataFrame(
+    zero_demand_fixture
+)
+
+
+print(
+    "\n================ ZERO DEMAND FIXTURE ================"
+)
+
+print(zero_demand_fixture)
+
+print(
+    "\nNumber of zero-demand records:",
+    len(zero_demand_fixture)
+)
