@@ -255,3 +255,25 @@ print("\nDaily Demand:")
 print(daily_demand.head(10))
 
 print("\nNumber of daily demand records:", len(daily_demand))
+
+# --------------------------------------------------
+# Generate Supplier Lead Times
+# --------------------------------------------------
+
+supplier_lead_times = []
+
+for _, product in products.iterrows():
+
+    supplier_lead_times.append({
+        "supplier_id": product["supplier_id"],
+        "product_id": product["product_id"],
+        "lead_time_days": random.randint(3, 14)
+    })
+
+supplier_lead_times = pd.DataFrame(supplier_lead_times)
+
+print("\nSupplier Lead Times:")
+print(supplier_lead_times.head(10))
+
+print("\nNumber of supplier lead-time records:",
+      len(supplier_lead_times))
