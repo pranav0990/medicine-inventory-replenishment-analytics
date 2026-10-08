@@ -493,39 +493,119 @@ for batch_number in range(1, 4):
 # ==================================================
 # Generate Acceptance Test Fixture
 # ==================================================
+# Small deterministic dataset used to test
+# Databricks validation and business rules.
+#
+# These records are NOT part of the main
+# production-like dataset.
 
 acceptance_fixture = pd.DataFrame([
+
+    # ------------------------------------------------
+    # TEST 1: Normal stock update
+    # ------------------------------------------------
     {
         "test_case": "normal_stock_update",
-        "opening_quantity": 100,
+        "movement_id": "TEST001",
+        "warehouse_id": "W001",
+        "product_id": "P001",
+        "batch_id": "B0001",
         "movement_type": "ISSUE",
         "quantity": 20,
-        "expected_stock": 80
+        "expected_result": "ACCEPTED",
+        "expected_stock": 80,
+        "expected_reason": ""
     },
+
+    # ------------------------------------------------
+    # TEST 2: Replay / duplicate movement
+    # ------------------------------------------------
     {
         "test_case": "replay_same_movement",
-        "opening_quantity": 100,
+        "movement_id": "TEST001",
+        "warehouse_id": "W001",
+        "product_id": "P001",
+        "batch_id": "B0001",
         "movement_type": "ISSUE",
         "quantity": 20,
-        "expected_stock": 80
+        "expected_result": "DEDUPLICATED",
+        "expected_stock": 80,
+        "expected_reason": "DUPLICATE_MOVEMENT_ID"
     },
+
+    # ------------------------------------------------
+    # TEST 3: Unknown product
+    # ------------------------------------------------
+    {
+        "test_case": "unknown_product",
+        "movement_id": "TEST002",
+        "warehouse_id": "W001",
+        "product_id": "P999",
+        "batch_id": "B0001",
+        "movement_type": "ISSUE",
+        "quantity": 20,
+        "expected_result": "REJECTED",
+        "expected_stock": None,
+        "expected_reason": "UNKNOWN_PRODUCT"
+    },
+
+    # ------------------------------------------------
+    # TEST 4: Negative quantity
+    # ------------------------------------------------
+    {
+        "test_case": "negative_quantity",
+        "movement_id": "TEST003",
+        "warehouse_id": "W001",
+        "product_id": "P001",
+        "batch_id": "B0001",
+        "movement_type": "ISSUE",
+        "quantity": -20,
+        "expected_result": "REJECTED",
+        "expected_stock": None,
+        "expected_reason": "NON_POSITIVE_QUANTITY"
+    },
+
+    # ------------------------------------------------
+    # TEST 5: Correction
+    # ------------------------------------------------
     {
         "test_case": "correction",
-        "opening_quantity": 100,
+        "movement_id": "TEST004",
+        "warehouse_id": "W001",
+        "product_id": "P001",
+        "batch_id": "B0001",
         "movement_type": "ISSUE",
         "quantity": 15,
-        "expected_stock": 85
+        "expected_result": "ACCEPTED",
+        "expected_stock": 85,
+        "expected_reason": "CORRECTED_FROM_20_TO_15"
     },
+
+    # ------------------------------------------------
+    # TEST 6: Zero demand
+    # ------------------------------------------------
     {
         "test_case": "zero_demand",
-        "opening_quantity": 100,
-        "movement_type": "ISSUE",
-        "quantity": 20,
-        "expected_stock": 80
+        "movement_id": None,
+        "warehouse_id": "W001",
+        "product_id": "P002",
+        "batch_id": "B0002",
+        "movement_type": None,
+        "quantity": 0,
+        "expected_result": "NO_DEMAND",
+        "expected_stock": None,
+        "expected_reason": "ZERO_DEMAND_FOR_7_DAYS"
     }
 ])
 
-print("\n================ ACCEPTANCE TEST FIXTURE ================")
+
+# ==================================================
+# Display Acceptance Fixture
+# ==================================================
+
+print(
+    "\n================ ACCEPTANCE TEST FIXTURE ================"
+)
 
 print(acceptance_fixture)
 
