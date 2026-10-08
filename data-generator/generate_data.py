@@ -488,3 +488,48 @@ for batch_number in range(1, 4):
         f"\nIncremental Batch {batch_number}: "
         f"{len(incremental_batch)} records"
     )
+
+
+# ==================================================
+# Generate Acceptance Test Fixture
+# ==================================================
+
+acceptance_fixture = pd.DataFrame([
+    {
+        "test_case": "normal_stock_update",
+        "opening_quantity": 100,
+        "movement_type": "ISSUE",
+        "quantity": 20,
+        "expected_stock": 80
+    },
+    {
+        "test_case": "replay_same_movement",
+        "opening_quantity": 100,
+        "movement_type": "ISSUE",
+        "quantity": 20,
+        "expected_stock": 80
+    },
+    {
+        "test_case": "correction",
+        "opening_quantity": 100,
+        "movement_type": "ISSUE",
+        "quantity": 15,
+        "expected_stock": 85
+    },
+    {
+        "test_case": "zero_demand",
+        "opening_quantity": 100,
+        "movement_type": "ISSUE",
+        "quantity": 20,
+        "expected_stock": 80
+    }
+])
+
+print("\n================ ACCEPTANCE TEST FIXTURE ================")
+
+print(acceptance_fixture)
+
+print(
+    "\nNumber of acceptance fixture records:",
+    len(acceptance_fixture)
+)
