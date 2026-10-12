@@ -2,3 +2,19 @@
 # Generated synthetic data
 data-generator/generated_data/
 data-generator/generated_data.zip
+
+# Environment secrets
+.env
+.env.*
+!.env.example
+
+# Astro project state
+.astro/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local environment and test artifacts
+.venv/
+.pytest_cache/
