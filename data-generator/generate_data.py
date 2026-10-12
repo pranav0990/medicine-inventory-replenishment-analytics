@@ -12,9 +12,16 @@ Run:
 Output directory: generated_data/
 """
 from pathlib import Path
+import os
 import random
+
 import pandas as pd
+
 from datetime import datetime, timedelta
+
+from azure.identity import ClientSecretCredential
+from azure.storage.filedatalake import DataLakeServiceClient
+from azure.core.exceptions import ResourceExistsError
 
 # ---------------- Configuration ----------------
 RANDOM_SEED = 42
@@ -717,3 +724,315 @@ print(
 print(
     "Silver must validate, quarantine/reject, deduplicate, and log these cases."
 )
+# ==================================================
+# ADLS AUTOMATIC UPLOAD
+# ==================================================
+#
+# Required GitHub Codespaces secrets:
+#
+# AZURE_CLIENT_ID
+# AZURE_TENANT_ID
+# AZURE_CLIENT_SECRET
+#
+# Required Azure role:
+#
+# Storage Blob Data Contributor
+#
+# Storage account:
+#
+# stteam1medinv
+#
+# Container:
+#
+# 1capstone
+#
+# Final structure:
+#
+# 1capstone/
+# └── inventory_files/
+#     ├── landing/
+#     ├── incremental/
+#     ├── checkpoint/
+#     └── quarantine/
+#
+# The data generator writes only to:
+#
+# landing/
+# incremental/
+#
+# Databricks will later use:
+#
+# checkpoint/
+# quarantine/
+# ==================================================
+
+
+# ---------------- ADLS configuration ----------------
+
+STORAGE_ACCOUNT_NAME = "stteam1medinv"
+CONTAINER_NAME = "1capstone"
+
+ADLS_PROJECT_ROOT = "inventory_files"
+
+LANDING_DIRECTORY = (
+    f"{ADLS_PROJECT_ROOT}/landing"
+)
+
+INCREMENTAL_DIRECTORY = (
+    f"{ADLS_PROJECT_ROOT}/incremental"
+)
+
+CHECKPOINT_DIRECTORY = (
+    f"{ADLS_PROJECT_ROOT}/checkpoint"
+)
+
+QUARANTINE_DIRECTORY = (
+    f"{ADLS_PROJECT_ROOT}/quarantine"
+)
+
+
+# ---------------- Read Codespaces secrets ----------------
+
+azure_client_id = os.getenv(
+    "AZURE_CLIENT_ID"
+)
+
+azure_tenant_id = os.getenv(
+    "AZURE_TENANT_ID"
+)
+
+azure_client_secret = os.getenv(
+    "AZURE_CLIENT_SECRET"
+)
+
+
+# ---------------- Validate secrets ----------------
+
+missing_secrets = []
+
+if not azure_client_id:
+    missing_secrets.append(
+        "AZURE_CLIENT_ID"
+    )
+
+if not azure_tenant_id:
+    missing_secrets.append(
+        "AZURE_TENANT_ID"
+    )
+
+if not azure_client_secret:
+    missing_secrets.append(
+        "AZURE_CLIENT_SECRET"
+    )
+
+if missing_secrets:
+    raise RuntimeError(
+        "The following GitHub Codespaces secrets "
+        "are unavailable: "
+        + ", ".join(missing_secrets)
+        + ". Stop and restart the Codespace after "
+        "adding or updating Codespaces secrets."
+    )
+
+print("\nAzure credentials are available.")
+print(
+    "Client secret value will not be displayed."
+)
+
+
+# ---------------- Create Azure credential ----------------
+
+credential = ClientSecretCredential(
+    tenant_id=azure_tenant_id,
+    client_id=azure_client_id,
+    client_secret=azure_client_secret
+)
+
+
+# ---------------- Connect to ADLS ----------------
+
+account_url = (
+    f"https://{STORAGE_ACCOUNT_NAME}"
+    ".dfs.core.windows.net"
+)
+
+service_client = DataLakeServiceClient(
+    account_url=account_url,
+    credential=credential
+)
+
+file_system_client = (
+    service_client.get_file_system_client(
+        file_system=CONTAINER_NAME
+    )
+)
+
+
+# ---------------- Test container access ----------------
+
+try:
+    file_system_client.get_file_system_properties()
+
+    print(
+        f"Connected successfully to container: "
+        f"{CONTAINER_NAME}"
+    )
+
+except Exception as error:
+    raise RuntimeError(
+        "Authentication succeeded, but access to "
+        f"the ADLS container '{CONTAINER_NAME}' "
+        "could not be verified. Check that the "
+        "medicine-inventory-data-generator app has "
+        "Storage Blob Data Contributor on storage "
+        f"account '{STORAGE_ACCOUNT_NAME}'."
+    ) from error
+
+
+# ---------------- Create required directories ----------------
+
+required_directories = [
+    LANDING_DIRECTORY,
+    INCREMENTAL_DIRECTORY,
+    CHECKPOINT_DIRECTORY,
+    QUARANTINE_DIRECTORY
+]
+
+for directory_path in required_directories:
+
+    directory_client = (
+        file_system_client.get_directory_client(
+            directory=directory_path
+        )
+    )
+
+    try:
+        directory_client.create_directory()
+
+        print(
+            f"Created ADLS directory: "
+            f"{directory_path}"
+        )
+
+    except ResourceExistsError:
+
+        print(
+            f"ADLS directory already exists: "
+            f"{directory_path}"
+        )
+
+
+# ---------------- Define upload function ----------------
+
+def upload_file_to_adls(
+    local_file_path,
+    destination_directory
+):
+    """
+    Upload one locally generated CSV file to ADLS.
+
+    Existing files with the same destination name
+    are overwritten.
+    """
+
+    local_path = Path(
+        local_file_path
+    )
+
+    if not local_path.exists():
+        raise FileNotFoundError(
+            f"Generated file was not found: "
+            f"{local_path}"
+        )
+
+    if not local_path.is_file():
+        raise ValueError(
+            f"Expected a file but found: "
+            f"{local_path}"
+        )
+
+    directory_client = (
+        file_system_client.get_directory_client(
+            directory=destination_directory
+        )
+    )
+
+    file_client = (
+        directory_client.get_file_client(
+            file=local_path.name
+        )
+    )
+
+    with local_path.open("rb") as source_file:
+
+        file_client.upload_data(
+            source_file,
+            overwrite=True
+        )
+
+    destination_path = (
+        f"{destination_directory}/"
+        f"{local_path.name}"
+    )
+
+    print(
+        f"Uploaded: {local_path}"
+        f" -> {destination_path}"
+    )
+
+
+# ---------------- Landing file mapping ----------------
+#
+# These are baseline/reference files.
+# They will be uploaded to:
+#
+# inventory_files/landing/
+# ----------------
+
+landing_files = [
+    "suppliers.csv",
+    "warehouses.csv",
+    "products.csv",
+    "supplier_product.csv",
+    "opening_inventory.csv",
+    "stock_movements.csv",
+    "daily_demand.csv",
+    "supplier_lead_times.csv",
+    "acceptance_fixture.csv",
+    "zero_demand_fixture.csv"
+]
+
+
+# ---------------- Incremental file mapping ----------------
+#
+# These files will be uploaded to:
+#
+# inventory_files/incremental/
+# ----------------
+
+incremental_files = [
+    "incremental_batch_1.csv",
+    "incremental_batch_2.csv",
+    "incremental_batch_3.csv"
+]
+
+
+# ---------------- Upload landing datasets ----------------
+
+print("\n==========================================")
+print("Uploading landing files")
+print("==========================================")
+
+for filename in landing_files:
+
+    local_file_path = (
+        OUTPUT_DIR / filename
+    )
+
+    upload_file_to_adls(
+        local_file_path=local_file_path,
+        destination_directory=LANDING_DIRECTORY
+    )
+
+
+
