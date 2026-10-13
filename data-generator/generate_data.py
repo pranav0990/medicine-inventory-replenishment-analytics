@@ -1035,4 +1035,19 @@ for filename in landing_files:
     )
 
 
+# ---------------- Upload incremental datasets ----------------
+
+print("\n==========================================")
+print("Uploading incremental files")
+print("==========================================")
+
+for filename in incremental_files:
+    local_file_path = OUTPUT_DIR / filename
+
+    upload_file_to_adls(
+        local_file_path=local_file_path,
+        destination_directory=INCREMENTAL_DIRECTORY
+    )
+
+
 
